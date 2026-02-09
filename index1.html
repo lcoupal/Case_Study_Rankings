@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exploring Systems Like a Scientist — Case Study Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --teal: #2E8B8B;
+    --slate: #5A6B7F;
+    --light-slate: #8896A6;
+    --border: #E2E8F0;
+    --bg: #FAFBFC;
+    --card-bg: #fff;
+    --health-bg: #E8F4F8; --health-text: #2A7B9B; --health-dot: #4A90A4;
+    --biz-bg: #EBF2EB; --biz-text: #4A6B4A; --biz-dot: #6B8E6B;
+    --edu-bg: #FDF2E6; --edu-text: #8B6914; --edu-dot: #C4883A;
+    --it-bg: #EEEAF4; --it-text: #5B4D8A; --it-dot: #7B6BA4;
+    --std-bg: #F0F4F8; --std-text: #1B2A4A; --std-border: #1B2A4A;
+    --spur-bg: #FFF8F0; --spur-text: #8B4513; --spur-border: #D2691E;
+    --amy: #C25178; --nate: #3A8FBF; --philip: #5E9E5E;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+    background: var(--bg); color: #1a1a2e; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 1300px; margin: 0 auto; padding: 36px 24px 60px; }
+
+  /* ── Login overlay ── */
+  .login-overlay {
+    position: fixed; inset: 0; background: rgba(27,42,74,0.6);
+    display: flex; align-items: center; justify-content: center; z-index: 1000;
+    backdrop-filter: blur(6px);
+  }
+  .login-overlay.hidden { display: none; }
+  .login-card {
+    background: #fff; border-radius: 16px; padding: 40px 48px; text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2); max-width: 400px; width: 90%;
+  }
+  .login-card h2 { font-size: 22px; color: var(--navy); margin-bottom: 6px; }
+  .login-card p { font-size: 14px; color: var(--slate); margin-bottom: 24px; }
+  .login-card .name-buttons { display: flex; flex-direction: column; gap: 10px; }
+  .name-btn {
+    padding: 14px 20px; border-radius: 10px; border: 2px solid var(--border);
+    background: #fff; font-size: 16px; font-weight: 600; font-family: inherit;
+    cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 12px;
+  }
+  .name-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  .name-btn .avatar {
+    width: 36px; height: 36px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 15px;
+  }
+  .name-btn[data-name="Amy"] .avatar { background: var(--amy); }
+  .name-btn[data-name="Nate"] .avatar { background: var(--nate); }
+  .name-btn[data-name="Philip"] .avatar { background: var(--philip); }
+  .name-btn[data-name="Amy"]:hover { border-color: var(--amy); background: #FDF2F5; }
+  .name-btn[data-name="Nate"]:hover { border-color: var(--nate); background: #F0F7FB; }
+  .name-btn[data-name="Philip"]:hover { border-color: var(--philip); background: #F0F5F0; }
+
+  /* ── Header ── */
+  .header { margin-bottom: 28px; }
+  .header-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; }
+  .header h1 { font-size: 26px; font-weight: 700; color: var(--navy); letter-spacing: -0.03em; line-height: 1.2; }
+  .header .subtitle { font-size: 15px; color: var(--slate); margin-top: 4px; }
+  .user-badge {
+    display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px;
+    border-radius: 24px; font-size: 14px; font-weight: 600; color: #fff;
+    cursor: pointer; transition: opacity 0.15s;
+  }
+  .user-badge:hover { opacity: 0.85; }
+  .user-badge .avatar-sm {
+    width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.3);
+    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px;
+  }
+  .user-badge.Amy { background: var(--amy); }
+  .user-badge.Nate { background: var(--nate); }
+  .user-badge.Philip { background: var(--philip); }
+
+  .header .context {
+    margin-top: 14px; padding: 14px 18px;
+    background: linear-gradient(135deg, #F0F7F7 0%, #F5F0F8 100%);
+    border-radius: 10px; border-left: 4px solid var(--teal);
+    font-size: 13.5px; color: #3D4F5F; line-height: 1.65;
+  }
+  .header .context strong { color: var(--navy); }
+  .comp-legend { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+  .comp-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 8px; font-size: 12px; font-weight: 600;
+  }
+  .comp-pill.c1 { background: #E3F1E3; color: #2D6A2D; }
+  .comp-pill.c2 { background: #FDE8D8; color: #B35900; }
+  .comp-pill.c3 { background: #DDE8F8; color: #1B4D8A; }
+
+  /* ── Rating legend ── */
+  .rating-legend {
+    margin-top: 12px; padding: 10px 18px; background: #fff;
+    border-radius: 8px; border: 1px solid var(--border);
+    display: flex; align-items: center; gap: 16px; font-size: 13px; color: var(--slate); flex-wrap: wrap;
+  }
+  .rating-legend strong { color: var(--navy); }
+  .rating-legend .star-example { color: #F0B429; font-size: 15px; }
+
+  /* ── Filter bar ── */
+  .filter-bar {
+    display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+    margin-bottom: 16px; padding: 14px 18px; background: var(--card-bg);
+    border-radius: 10px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .search-wrap { flex: 1 1 240px; min-width: 180px; position: relative; }
+  .search-wrap svg {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    color: #B0BBC8; pointer-events: none;
+  }
+  .filter-bar input[type="text"] {
+    width: 100%; padding: 8px 14px 8px 36px; border: 1.5px solid #D1D9E6;
+    border-radius: 7px; font-size: 14px; font-family: inherit; outline: none;
+    background: #F7F9FC; transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .filter-bar input[type="text"]:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(46,139,139,0.1); }
+  .pill-group { display: flex; gap: 5px; flex-wrap: wrap; }
+  .pill-group.right { margin-left: auto; }
+  .pill-btn {
+    padding: 6px 14px; border-radius: 20px; border: 1.5px solid #D1D9E6;
+    background: #fff; color: var(--slate); font-size: 13px; font-weight: 400;
+    font-family: inherit; cursor: pointer; transition: all 0.15s; line-height: 1.2; white-space: nowrap;
+  }
+  .pill-btn:hover { border-color: #B0BBC8; background: #F7F9FC; }
+  .pill-btn.active-all { border: 2px solid var(--navy); background: var(--navy); color: #fff; font-weight: 600; }
+  .pill-btn.active-health { border: 2px solid var(--health-dot); background: var(--health-bg); color: var(--health-text); font-weight: 600; }
+  .pill-btn.active-biz { border: 2px solid var(--biz-dot); background: var(--biz-bg); color: var(--biz-text); font-weight: 600; }
+  .pill-btn.active-edu { border: 2px solid var(--edu-dot); background: var(--edu-bg); color: var(--edu-text); font-weight: 600; }
+  .pill-btn.active-it { border: 2px solid var(--it-dot); background: var(--it-bg); color: var(--it-text); font-weight: 600; }
+  .pill-btn.active-std { border: 2px solid var(--std-border); background: var(--std-bg); color: var(--std-text); font-weight: 600; }
+  .pill-btn.active-spur { border: 2px solid var(--spur-border); background: var(--spur-bg); color: var(--spur-text); font-weight: 600; }
+
+  .count-bar {
+    font-size: 13px; color: var(--light-slate); margin-bottom: 8px; padding-left: 4px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .collapse-link { color: var(--teal); cursor: pointer; text-decoration: none; }
+  .collapse-link:hover { text-decoration: underline; }
+  .sync-status { margin-left: auto; font-size: 12px; }
+  .sync-status.saving { color: var(--teal); }
+  .sync-status.saved { color: #6B8E6B; }
+  .sync-status.error { color: #C25178; }
+
+  /* ── Table ── */
+  .table-wrap {
+    background: var(--card-bg); border-radius: 10px; border: 1px solid var(--border);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04); overflow: hidden;
+  }
+  .table-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead tr { background: #F7F9FC; border-bottom: 2px solid var(--border); }
+  th {
+    padding: 11px 12px; text-align: left; font-size: 11px; font-weight: 600;
+    color: var(--slate); text-transform: uppercase; letter-spacing: 0.05em;
+    white-space: nowrap; user-select: none;
+  }
+  th.sortable { cursor: pointer; }
+  th.sortable:hover { color: var(--navy); }
+  .sort-icon { font-size: 10px; margin-left: 3px; opacity: 0.3; }
+  .sort-icon.active { opacity: 1; }
+  td { padding: 10px 12px; vertical-align: top; }
+  tbody tr { border-bottom: 1px solid #EEF1F5; cursor: pointer; transition: background 0.12s; }
+  tbody tr:nth-child(even) { background: #FAFBFC; }
+  tbody tr:hover { background: #F0F5FA !important; }
+  tbody tr.expanded { background: #F8FAFE !important; border-bottom: none; }
+
+  .cell-id { text-align: center; font-weight: 600; color: var(--light-slate); font-size: 12px; }
+  .cell-title { font-weight: 600; color: var(--navy); font-size: 13.5px; }
+  .cell-scenario { color: #4A5568; line-height: 1.55; font-size: 12.5px; }
+  .cell-detail { text-align: center; }
+
+  .badge-collection { display: inline-block; padding: 3px 9px; border-radius: 12px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .badge-collection.std { background: var(--std-bg); color: var(--std-text); }
+  .badge-collection.spur { background: var(--spur-bg); color: var(--spur-text); }
+  .badge-domain { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 12px; font-size: 11.5px; font-weight: 500; }
+  .badge-domain .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .badge-domain.health { background: var(--health-bg); color: var(--health-text); }
+  .badge-domain.health .dot { background: var(--health-dot); }
+  .badge-domain.biz { background: var(--biz-bg); color: var(--biz-text); }
+  .badge-domain.biz .dot { background: var(--biz-dot); }
+  .badge-domain.edu { background: var(--edu-bg); color: var(--edu-text); }
+  .badge-domain.edu .dot { background: var(--edu-dot); }
+  .badge-domain.it { background: var(--it-bg); color: var(--it-text); }
+  .badge-domain.it .dot { background: var(--it-dot); }
+
+  .chevron {
+    display: inline-block; width: 24px; height: 24px; border-radius: 50%;
+    background: #EEF1F5; color: var(--light-slate); font-size: 14px;
+    line-height: 24px; text-align: center; transition: all 0.2s;
+  }
+  .chevron.open { background: var(--teal); color: #fff; transform: rotate(180deg); }
+
+  /* ── Rankings column ── */
+  .rankings-cell { min-width: 200px; }
+  .reviewer-ratings { display: flex; flex-direction: column; gap: 6px; }
+  .reviewer-row {
+    display: flex; align-items: center; gap: 8px; font-size: 12px;
+  }
+  .reviewer-avatar {
+    width: 22px; height: 22px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; color: #fff; font-weight: 700;
+    font-size: 10px; flex-shrink: 0;
+  }
+  .reviewer-avatar.Amy { background: var(--amy); }
+  .reviewer-avatar.Nate { background: var(--nate); }
+  .reviewer-avatar.Philip { background: var(--philip); }
+  .reviewer-name { width: 42px; font-weight: 600; color: var(--slate); font-size: 11px; }
+  .stars { display: flex; gap: 2px; }
+  .star {
+    font-size: 18px; cursor: pointer; color: #D1D9E6; transition: color 0.1s;
+    line-height: 1; user-select: none;
+  }
+  .star.filled { color: #F0B429; }
+  .star.other-filled { color: #F0B429; cursor: default; }
+  .star.hovering { color: #FFCB47; }
+  .star.disabled { cursor: default; }
+  .no-rating { font-size: 11px; color: #C0C8D4; font-style: italic; }
+
+  /* ── Expanded detail row ── */
+  tr.detail-row { background: #F8FAFE !important; border-bottom: 2px solid var(--teal); }
+  tr.detail-row td { padding: 4px 14px 18px 14px; }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .detail-card { background: #fff; border-radius: 8px; padding: 12px 14px; border: 1px solid var(--border); }
+  .detail-card-header {
+    display: flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 700;
+    color: var(--navy); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  .comp-badge { display: inline-block; padding: 2px 7px; border-radius: 6px; font-size: 10.5px; font-weight: 700; }
+  .comp-badge.c1 { background: #E3F1E3; color: #2D6A2D; }
+  .comp-badge.c2 { background: #FDE8D8; color: #B35900; }
+  .comp-badge.c3 { background: #DDE8F8; color: #1B4D8A; }
+  .detail-label { font-size: 10.5px; font-weight: 600; color: var(--light-slate); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .detail-claim { font-size: 12.5px; color: #4A5568; line-height: 1.55; font-style: italic; }
+  .detail-system { font-size: 12.5px; color: #4A5568; line-height: 1.55; }
+
+  /* Notes section in expanded row */
+  .notes-section { margin-top: 2px; }
+  .notes-section h4 { font-size: 12px; font-weight: 700; color: var(--navy); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.03em; }
+  .notes-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .note-card { background: #fff; border-radius: 8px; padding: 10px 12px; border: 1px solid var(--border); }
+  .note-card-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .note-card-header .reviewer-avatar { width: 20px; height: 20px; font-size: 9px; }
+  .note-card-header span { font-size: 12px; font-weight: 600; color: var(--slate); }
+  .note-card textarea {
+    width: 100%; min-height: 60px; border: 1.5px solid var(--border); border-radius: 6px;
+    padding: 8px 10px; font-size: 13px; font-family: inherit; resize: vertical;
+    outline: none; transition: border-color 0.2s; background: #FAFBFC;
+  }
+  .note-card textarea:focus { border-color: var(--teal); background: #fff; }
+  .note-card textarea:disabled { background: #F5F7FA; color: #666; cursor: default; }
+  .note-card .other-note {
+    font-size: 13px; color: #4A5568; line-height: 1.5; padding: 8px 10px;
+    background: #F7F9FC; border-radius: 6px; min-height: 40px;
+  }
+  .note-card .empty-note { font-size: 12px; color: #C0C8D4; font-style: italic; padding: 8px 10px; }
+
+  /* ── Legend ── */
+  .legend {
+    margin-top: 20px; padding: 14px 20px; background: var(--card-bg);
+    border-radius: 10px; border: 1px solid var(--border);
+    display: flex; flex-wrap: wrap; gap: 20px; align-items: center;
+    font-size: 12px; color: var(--light-slate);
+  }
+  .legend strong { color: var(--slate); font-weight: 600; }
+  .legend .legend-right { margin-left: auto; color: #AAB4C0; }
+
+  .empty-state { text-align: center; padding: 48px 20px; color: var(--light-slate); font-size: 14px; }
+
+  @media print {
+    .login-overlay, .filter-bar, .count-bar, .legend, .user-badge { display: none; }
+    .container { padding: 20px; }
+    .table-wrap { box-shadow: none; border: 1px solid #ccc; }
+  }
+  @media (max-width: 900px) {
+    .detail-grid, .notes-grid { grid-template-columns: 1fr; }
+    .pill-group.right { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Login Overlay -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <h2>Welcome, reviewer!</h2>
+    <p>Select your name to start rating case studies.<br>Everyone can see all ratings.</p>
+    <div class="name-buttons">
+      <button class="name-btn" data-name="Amy" onclick="login('Amy')">
+        <span class="avatar">A</span> Amy
+      </button>
+      <button class="name-btn" data-name="Nate" onclick="login('Nate')">
+        <span class="avatar">N</span> Nate
+      </button>
+      <button class="name-btn" data-name="Philip" onclick="login('Philip')">
+        <span class="avatar">P</span> Philip
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <h1>Exploring Systems Like a Scientist</h1>
+        <div class="subtitle">Case Study Options — 20 scenarios for SME review</div>
+      </div>
+      <div class="user-badge" id="userBadge" style="display:none" onclick="switchUser()">
+        <span class="avatar-sm" id="userAvatar"></span>
+        <span id="userName"></span> ▾
+      </div>
+    </div>
+    <div class="context">
+      Each case study supports all three course competencies through a single real-world scenario. Students choose one scenario and explore it across all competencies — a <strong>"choose your own adventure"</strong> model. Scoped to <strong>NGSS Grade 8 ceiling</strong> at <strong>Level 2</strong>.
+      <div class="comp-legend">
+        <span class="comp-pill c1">C1 — Support a Scientific Claim</span>
+        <span class="comp-pill c2">C2 — Evaluate a Scientific Claim</span>
+        <span class="comp-pill c3">C3 — Explain the System</span>
+      </div>
+    </div>
+    <div class="rating-legend">
+      <strong>Rating scale:</strong>
+      <span><span class="star-example">★</span> = Weak fit</span>
+      <span><span class="star-example">★★</span> = Possible</span>
+      <span><span class="star-example">★★★</span> = Good fit</span>
+      <span><span class="star-example">★★★★</span> = Strong fit</span>
+      <span><span class="star-example">★★★★★</span> = Must include</span>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filter-bar">
+    <div class="search-wrap">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="Search titles, scenarios, claims...">
+    </div>
+    <div class="pill-group" id="domainFilters">
+      <button class="pill-btn active-all" data-domain="All">All Domains</button>
+      <button class="pill-btn" data-domain="Healthcare">Healthcare</button>
+      <button class="pill-btn" data-domain="Business">Business</button>
+      <button class="pill-btn" data-domain="Education">Education</button>
+      <button class="pill-btn" data-domain="IT">IT</button>
+    </div>
+    <div class="pill-group right" id="collectionFilters">
+      <button class="pill-btn active-all" data-collection="All">Both</button>
+      <button class="pill-btn" data-collection="Standard">Standard</button>
+      <button class="pill-btn" data-collection="Spurious Correlations">Spurious</button>
+    </div>
+  </div>
+
+  <div class="count-bar">
+    <span>Showing <strong id="filteredCount">20</strong> of 20 case studies</span>
+    <a class="collapse-link" id="collapseAll" style="display:none">← Collapse all</a>
+    <span class="sync-status" id="syncStatus"></span>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:44px;text-align:center">#</th>
+            <th class="sortable" style="width:95px" data-sort="collection">Collection <span class="sort-icon">↕</span></th>
+            <th class="sortable" style="min-width:160px" data-sort="title">Case Study <span class="sort-icon">↕</span></th>
+            <th class="sortable" style="width:95px" data-sort="domain">Domain <span class="sort-icon">↕</span></th>
+            <th style="min-width:260px">Scenario Overview</th>
+            <th style="min-width:210px">Rankings</th>
+            <th style="width:44px;text-align:center"></th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="legend">
+    <strong>Collections:</strong>
+    <span><span class="badge-collection std">Standard</span> 12 real-world case studies</span>
+    <span><span class="badge-collection spur">Spurious</span> 8 misleading correlation case studies</span>
+    <span class="legend-right">Click any row for detail + notes</span>
+  </div>
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbzG6LWzwYWZDciPX-SEKhrL2IrdieHEGLBogEve6d1OT--xOWyKAbUH76xifAM6dYKI/exec';
+const REVIEWERS = ['Amy', 'Nate', 'Philip'];
+const REVIEWER_COLORS = { Amy: '#C25178', Nate: '#3A8FBF', Philip: '#5E9E5E' };
+
+const CASES = [
+  {id:"A1",collection:"Standard",title:"Antibiotic Resistance",domain:"Healthcare",
+    scenario:"Explores how antibiotic use in healthcare, agriculture, and everyday life contributes to antibiotic-resistant infections and the system connecting farms, food supply, hospitals, and regulation.",
+    c1Claim:"Overuse of antibiotics in livestock farming contributes to antibiotic-resistant infections in humans.",
+    c2Claim:"Organic meat is safer because it has no antibiotic-resistant bacteria.",
+    c3System:"Livestock farms \u2192 food supply chain \u2192 hospitals \u2192 pharmaceutical companies \u2192 government regulation"},
+  {id:"A2",collection:"Standard",title:"Screen Time & Adolescent Mental Health",domain:"Healthcare",
+    scenario:"Examines evidence connecting smartphone/social media use to rising teen anxiety and depression. Evaluate sensationalized claims against nuanced research.",
+    c1Claim:"Increased social media use is associated with higher rates of anxiety and depression in teenagers.",
+    c2Claim:"Phones are destroying our kids\u2019 brains\u2014studies PROVE it!",
+    c3System:"Social media platforms \u2192 teens \u2192 parents \u2192 schools \u2192 mental health services \u2192 tech companies"},
+  {id:"A3",collection:"Standard",title:"Vaccination & Herd Immunity",domain:"Healthcare",
+    scenario:"Explores how individual vaccination decisions affect community-wide disease protection and how herd immunity thresholds work.",
+    c1Claim:"When vaccination rates fall below herd immunity thresholds, disease outbreaks become more likely.",
+    c2Claim:"Natural immunity is always better than vaccine immunity.",
+    c3System:"Individual decisions \u2192 community health \u2192 public health infrastructure \u2192 disease dynamics \u2192 regulation"},
+  {id:"A4",collection:"Standard",title:"Fast Fashion & Sustainability",domain:"Business",
+    scenario:"Investigates the environmental and social costs of rapid, inexpensive clothing production\u2014textile waste, water pollution, carbon emissions, and labor conditions.",
+    c1Claim:"Fast fashion significantly contributes to textile waste and water pollution globally.",
+    c2Claim:"Buying \u2018sustainable\u2019 clothing lines from fast fashion brands solves the environmental problem.",
+    c3System:"Consumer demand \u2192 brands \u2192 factories \u2192 workers \u2192 environment \u2192 waste management \u2192 regulation"},
+  {id:"A5",collection:"Standard",title:"Remote Work Productivity",domain:"Business",
+    scenario:"Analyzes competing claims about remote vs. in-office productivity following the pandemic-era shift.",
+    c1Claim:"Remote work productivity depends on the type of task, management practices, and individual circumstances.",
+    c2Claim:"Remote workers are less productive because they\u2019re distracted at home.",
+    c3System:"Workers \u2192 managers \u2192 technology \u2192 office culture \u2192 real estate \u2192 work-life balance \u2192 company policy"},
+  {id:"A6",collection:"Standard",title:"Food Delivery Apps & Local Restaurants",domain:"Business",
+    scenario:"Examines how delivery platforms have transformed restaurant operations\u2014promising increased orders while charging significant fees.",
+    c1Claim:"Food delivery apps increase restaurant visibility but reduce profit margins through high commission fees.",
+    c2Claim:"Food delivery apps are saving local restaurants by expanding their customer base.",
+    c3System:"Restaurants \u2192 delivery platforms \u2192 drivers \u2192 consumers \u2192 local economy \u2192 labor markets"},
+  {id:"A7",collection:"Standard",title:"Class Size & Student Achievement",domain:"Education",
+    scenario:"Evaluates whether reducing class sizes actually improves student learning\u2014an expensive but popular policy.",
+    c1Claim:"Smaller class sizes can improve outcomes, but the effect depends on teacher quality and instructional practices.",
+    c2Claim:"Simply reducing class sizes guarantees better student achievement.",
+    c3System:"Class size \u2192 teacher quality \u2192 instructional time \u2192 student needs \u2192 school budgets \u2192 policy"},
+  {id:"A8",collection:"Standard",title:"Technology in the Classroom",domain:"Education",
+    scenario:"Investigates whether billions invested in ed-tech actually improve learning, and what happens when access is unequal.",
+    c1Claim:"Ed-tech improves learning with proper support, but access inequities can widen achievement gaps.",
+    c2Claim:"Giving every student a laptop will close the achievement gap.",
+    c3System:"Devices \u2192 internet access \u2192 teacher training \u2192 curriculum \u2192 home environment \u2192 funding \u2192 equity"},
+  {id:"A9",collection:"Standard",title:"Later School Start Times",domain:"Education",
+    scenario:"Examines sleep science showing teen biological clocks shift later, making early start times misaligned with natural patterns.",
+    c1Claim:"Adolescent biological clocks shift later during puberty, making early school start times misaligned.",
+    c2Claim:"Teens are just lazy\u2014they should go to bed earlier instead of changing school schedules.",
+    c3System:"Sleep biology \u2192 school schedules \u2192 transportation \u2192 parents \u2192 athletics \u2192 teacher contracts \u2192 policy"},
+  {id:"A10",collection:"Standard",title:"Social Media Algorithms & Content",domain:"IT",
+    scenario:"Explores how algorithms designed to maximize engagement shape what users see\u2014consequences for information quality and polarization.",
+    c1Claim:"Social media algorithms designed to maximize engagement can amplify sensational and polarizing content.",
+    c2Claim:"Algorithms just show people what they want to see\u2014there\u2019s nothing wrong with that.",
+    c3System:"Users \u2192 algorithms \u2192 content creators \u2192 advertisers \u2192 regulators \u2192 public discourse \u2192 mental health"},
+  {id:"A11",collection:"Standard",title:"Password Security",domain:"IT",
+    scenario:"Challenges traditional assumptions about password policies. Evaluate security research against common practices.",
+    c1Claim:"Requiring frequent password changes can reduce security by encouraging weaker, predictable passwords.",
+    c2Claim:"More complex password requirements always make systems more secure.",
+    c3System:"Users \u2192 IT policies \u2192 password managers \u2192 hackers \u2192 authentication tech \u2192 human behavior"},
+  {id:"A12",collection:"Standard",title:"AI-Generated Content & Misinformation",domain:"IT",
+    scenario:"Examines how AI tools generating realistic text/images/video create challenges for identifying misinformation.",
+    c1Claim:"AI-generated content makes misinformation harder to detect because it mimics credible sources convincingly.",
+    c2Claim:"AI detection tools can reliably identify all AI-generated content.",
+    c3System:"AI tools \u2192 content creators \u2192 platforms \u2192 consumers \u2192 fact-checkers \u2192 regulation \u2192 trust in media"},
+  {id:"B1",collection:"Spurious Correlations",title:"Ice Cream Sales & Drowning Deaths",domain:"Healthcare",
+    scenario:"Ice cream sales and drowning deaths increase together. Identify hot weather as the confounding variable.",
+    c1Claim:"Hot summer weather causes both increased ice cream sales and increased drowning deaths.",
+    c2Claim:"Eating ice cream causes drowning. We should ban ice cream at beaches.",
+    c3System:"Weather \u2192 swimming activity \u2192 lifeguards \u2192 pool access \u2192 swim lessons \u2192 supervision \u2192 EMS"},
+  {id:"B2",collection:"Spurious Correlations",title:"Hospital Visits & Mortality Rates",domain:"Healthcare",
+    scenario:"Viral blog claims hospitals are killing patients because frequent visitors die more. Identify reverse causation.",
+    c1Claim:"Serious illness causes both frequent hospital visits and higher mortality.",
+    c2Claim:"Hospitals are dangerous. The more you go, the more likely you are to die.",
+    c3System:"Patient health \u2192 primary care access \u2192 emergency departments \u2192 insurance \u2192 preventive care"},
+  {id:"B3",collection:"Spurious Correlations",title:"Coffee Shops & Property Values",domain:"Business",
+    scenario:"Subsidize coffee shops to raise property values? Identify wealth as the confounding variable.",
+    c1Claim:"Neighborhood affluence attracts both coffee shops and higher property values independently.",
+    c2Claim:"Coffee shops increase property values. Subsidize them in low-income neighborhoods.",
+    c3System:"Neighborhood wealth \u2192 retail development \u2192 property values \u2192 gentrification \u2192 displacement"},
+  {id:"B4",collection:"Spurious Correlations",title:"Email Opens & Customer Purchases",domain:"Business",
+    scenario:"Email openers buy 5x more\u2014send more emails? Identify pre-existing interest as the real driver.",
+    c1Claim:"Customer interest drives both email engagement and purchases.",
+    c2Claim:"Opening marketing emails causes customers to buy more. Send more emails.",
+    c3System:"Customer interest \u2192 browse behavior \u2192 email engagement \u2192 purchase decisions \u2192 unsubscribes"},
+  {id:"B5",collection:"Spurious Correlations",title:"Music Lessons & Academic Achievement",domain:"Education",
+    scenario:"Music students have higher GPAs\u2014require music for all? Identify socioeconomic confounding.",
+    c1Claim:"Socioeconomic advantages provide access to both music lessons and academic support.",
+    c2Claim:"Music lessons make students smarter. Require them for all students.",
+    c3System:"Family resources \u2192 extracurriculars \u2192 academic support \u2192 school quality \u2192 peer environment"},
+  {id:"B6",collection:"Spurious Correlations",title:"School Spending & Test Scores",domain:"Education",
+    scenario:"Higher-spending districts score lower\u2014cut budgets? Identify that high-need districts get more funding.",
+    c1Claim:"Districts with greater needs receive more funding to address existing challenges.",
+    c2Claim:"Higher school spending causes lower test scores. Cut education budgets.",
+    c3System:"Student needs \u2192 funding formulas \u2192 resource allocation \u2192 teacher quality \u2192 community factors"},
+  {id:"B7",collection:"Spurious Correlations",title:"Social Media Use & Teen Depression",domain:"IT",
+    scenario:"Depression rose 60% since smartphones\u2014confiscate phones? Evaluate correlation vs. causation.",
+    c1Claim:"Multiple factors\u2014economic stress, academic pressure, social isolation, social media\u2014contribute to rising teen depression.",
+    c2Claim:"Smartphones are destroying children\u2019s mental health. Confiscate all phones.",
+    c3System:"Social media \u2192 academic pressure \u2192 economic stress \u2192 family dynamics \u2192 mental health services"},
+  {id:"B8",collection:"Spurious Correlations",title:"Password Policies & Security Breaches",domain:"IT",
+    scenario:"Stricter password policies correlate with MORE breaches. Identify reactive policy adoption.",
+    c1Claim:"Companies that experienced breaches adopt stricter policies in response\u2014breaches came first.",
+    c2Claim:"Strict password policies cause more breaches. Complex passwords make us less secure.",
+    c3System:"Breach history \u2192 policy response \u2192 user behavior \u2192 workarounds \u2192 security culture"},
+];
+
+const DOMAIN_CLASS = { Healthcare:"health", Business:"biz", Education:"edu", IT:"it" };
+let currentUser = null;
+let currentDomain = "All";
+let currentCollection = "All";
+let currentSearch = "";
+let currentSort = null;
+let currentSortDir = "asc";
+let expandedRows = new Set();
+let rankings = {}; // { "A1_Amy": {rating:3, notes:"..."}, ... }
+let saveTimeout = null;
+
+// ── Key helpers ──
+function rKey(caseId, reviewer) { return caseId + '_' + reviewer; }
+
+// ── Login ──
+function login(name) {
+  currentUser = name;
+  document.getElementById('loginOverlay').classList.add('hidden');
+  const badge = document.getElementById('userBadge');
+  badge.style.display = 'inline-flex';
+  badge.className = 'user-badge ' + name;
+  document.getElementById('userAvatar').textContent = name[0];
+  document.getElementById('userName').textContent = name;
+  loadRankings();
+}
+function switchUser() {
+  document.getElementById('loginOverlay').classList.remove('hidden');
+}
+
+// ── Google Sheets API ──
+function setSyncStatus(text, cls) {
+  const el = document.getElementById('syncStatus');
+  el.textContent = text;
+  el.className = 'sync-status ' + cls;
+  if (cls === 'saved') setTimeout(() => { el.textContent = ''; }, 3000);
+}
+
+async function loadRankings() {
+  setSyncStatus('Loading rankings...', 'saving');
+  try {
+    const res = await fetch(API_URL + '?action=load');
+    const data = await res.json();
+    rankings = {};
+    data.forEach(r => {
+      rankings[rKey(r.caseId, r.reviewer)] = { rating: r.rating, notes: r.notes || '' };
+    });
+    setSyncStatus('Synced', 'saved');
+    render();
+  } catch (e) {
+    setSyncStatus('Could not load — working offline', 'error');
+    render();
+  }
+}
+
+async function saveRanking(caseId, reviewer, rating, notes) {
+  setSyncStatus('Saving...', 'saving');
+  try {
+    await fetch(API_URL + '?action=save', {
+      method: 'POST',
+      body: JSON.stringify({ caseId, reviewer, rating, notes }),
+    });
+    setSyncStatus('Saved \u2713', 'saved');
+  } catch (e) {
+    setSyncStatus('Save failed — try again', 'error');
+  }
+}
+
+function setRating(caseId, rating, e) {
+  if (e) e.stopPropagation();
+  if (!currentUser) return;
+  const key = rKey(caseId, currentUser);
+  const existing = rankings[key] || {};
+  // Toggle off if clicking same rating
+  const newRating = (existing.rating === rating) ? 0 : rating;
+  rankings[key] = { ...existing, rating: newRating };
+  render();
+  saveRanking(caseId, currentUser, newRating, existing.notes || '');
+}
+
+function saveNotes(caseId) {
+  if (!currentUser) return;
+  const textarea = document.getElementById('notes_' + caseId + '_' + currentUser);
+  if (!textarea) return;
+  const key = rKey(caseId, currentUser);
+  const existing = rankings[key] || {};
+  rankings[key] = { ...existing, notes: textarea.value };
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => {
+    saveRanking(caseId, currentUser, existing.rating || 0, textarea.value);
+  }, 800);
+}
+
+// ── Filtering ──
+function getFiltered() {
+  let data = [...CASES];
+  if (currentDomain !== "All") data = data.filter(c => c.domain === currentDomain);
+  if (currentCollection !== "All") data = data.filter(c => c.collection === currentCollection);
+  if (currentSearch) {
+    const q = currentSearch.toLowerCase();
+    data = data.filter(c =>
+      c.title.toLowerCase().includes(q) || c.scenario.toLowerCase().includes(q) ||
+      c.c1Claim.toLowerCase().includes(q) || c.c2Claim.toLowerCase().includes(q)
+    );
+  }
+  if (currentSort) {
+    data.sort((a, b) => {
+      const av = a[currentSort] || ""; const bv = b[currentSort] || "";
+      return currentSortDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+  }
+  return data;
+}
+
+// ── Render ──
+function renderStars(caseId, reviewer) {
+  const key = rKey(caseId, reviewer);
+  const rating = (rankings[key] || {}).rating || 0;
+  const isCurrentUser = reviewer === currentUser;
+  let html = '';
+  for (let i = 1; i <= 5; i++) {
+    if (isCurrentUser) {
+      html += `<span class="star ${i <= rating ? 'filled' : ''}" 
+        onmouseover="hoverStars(this,${i})" onmouseout="unhoverStars(this)"
+        onclick="setRating('${caseId}',${i},event)">\u2605</span>`;
+    } else {
+      html += `<span class="star ${i <= rating ? 'other-filled' : ''} disabled">\u2605</span>`;
+    }
+  }
+  return html;
+}
+
+function render() {
+  const filtered = getFiltered();
+  const tbody = document.getElementById('tableBody');
+  document.getElementById('filteredCount').textContent = filtered.length;
+  document.getElementById('collapseAll').style.display = expandedRows.size > 0 ? 'inline' : 'none';
+
+  let html = '';
+  if (filtered.length === 0) {
+    html = '<tr><td colspan="7" class="empty-state">No case studies match your filters.</td></tr>';
+  } else {
+    filtered.forEach((c, i) => {
+      const isExpanded = expandedRows.has(c.id);
+      const domClass = DOMAIN_CLASS[c.domain];
+      const collClass = c.collection === "Standard" ? "std" : "spur";
+      const collLabel = c.collection === "Standard" ? "Standard" : "Spurious";
+
+      html += `<tr class="${isExpanded ? 'expanded' : ''}" onclick="toggleRow('${c.id}')">
+        <td class="cell-id">${c.id}</td>
+        <td><span class="badge-collection ${collClass}">${collLabel}</span></td>
+        <td class="cell-title">${c.title}</td>
+        <td><span class="badge-domain ${domClass}"><span class="dot"></span>${c.domain}</span></td>
+        <td class="cell-scenario">${c.scenario}</td>
+        <td class="rankings-cell" onclick="event.stopPropagation()">
+          <div class="reviewer-ratings">`;
+
+      REVIEWERS.forEach(r => {
+        const key = rKey(c.id, r);
+        const rating = (rankings[key] || {}).rating || 0;
+        html += `<div class="reviewer-row">
+          <span class="reviewer-avatar ${r}">${r[0]}</span>
+          <span class="reviewer-name">${r}</span>
+          <div class="stars">${renderStars(c.id, r)}</div>
+        </div>`;
+      });
+
+      html += `</div></td>
+        <td class="cell-detail"><span class="chevron ${isExpanded ? 'open' : ''}">\u25BE</span></td>
+      </tr>`;
+
+      if (isExpanded) {
+        const c1Label = c.collection === "Spurious Correlations" ? "The Correct Claim:" : "The Claim:";
+        const c2Label = c.collection === "Spurious Correlations" ? "The Flawed Claim:" : "Claim to Evaluate:";
+
+        html += `<tr class="detail-row" onclick="event.stopPropagation()">
+          <td colspan="7">
+            <div class="detail-grid">
+              <div class="detail-card">
+                <div class="detail-card-header"><span class="comp-badge c1">C1</span> Support a Scientific Claim</div>
+                <div class="detail-label">${c1Label}</div>
+                <div class="detail-claim">\u201C${c.c1Claim}\u201D</div>
+              </div>
+              <div class="detail-card">
+                <div class="detail-card-header"><span class="comp-badge c2">C2</span> Evaluate a Scientific Claim</div>
+                <div class="detail-label">${c2Label}</div>
+                <div class="detail-claim">\u201C${c.c2Claim}\u201D</div>
+              </div>
+              <div class="detail-card">
+                <div class="detail-card-header"><span class="comp-badge c3">C3</span> Explain the System</div>
+                <div class="detail-label">System Components:</div>
+                <div class="detail-system">${c.c3System}</div>
+              </div>
+            </div>
+            <div class="notes-section">
+              <h4>Reviewer Notes</h4>
+              <div class="notes-grid">`;
+
+        REVIEWERS.forEach(r => {
+          const key = rKey(c.id, r);
+          const notes = (rankings[key] || {}).notes || '';
+          const isMe = r === currentUser;
+          html += `<div class="note-card">
+            <div class="note-card-header">
+              <span class="reviewer-avatar ${r}">${r[0]}</span>
+              <span>${r}</span>
+            </div>`;
+          if (isMe) {
+            html += `<textarea id="notes_${c.id}_${r}" placeholder="Add your notes..." 
+              oninput="saveNotes('${c.id}')">${notes}</textarea>`;
+          } else if (notes) {
+            html += `<div class="other-note">${notes.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`;
+          } else {
+            html += `<div class="empty-note">No notes yet</div>`;
+          }
+          html += `</div>`;
+        });
+
+        html += `</div></div></td></tr>`;
+      }
+    });
+  }
+  tbody.innerHTML = html;
+}
+
+function toggleRow(id) {
+  if (expandedRows.has(id)) expandedRows.delete(id); else expandedRows.add(id);
+  render();
+}
+
+// Star hover effects
+function hoverStars(el, n) {
+  const stars = el.parentElement.querySelectorAll('.star');
+  stars.forEach((s, i) => { if (i < n) s.classList.add('hovering'); });
+}
+function unhoverStars(el) {
+  const stars = el.parentElement.querySelectorAll('.star');
+  stars.forEach(s => s.classList.remove('hovering'));
+}
+
+// ── Event listeners ──
+document.getElementById('domainFilters').addEventListener('click', e => {
+  const btn = e.target.closest('.pill-btn');
+  if (!btn) return;
+  currentDomain = btn.dataset.domain;
+  document.querySelectorAll('#domainFilters .pill-btn').forEach(b => {
+    b.className = 'pill-btn';
+    const d = b.dataset.domain;
+    if (d === currentDomain) {
+      if (d === 'All') b.classList.add('active-all');
+      else b.classList.add('active-' + DOMAIN_CLASS[d]);
+    }
+  });
+  render();
+});
+
+document.getElementById('collectionFilters').addEventListener('click', e => {
+  const btn = e.target.closest('.pill-btn');
+  if (!btn) return;
+  currentCollection = btn.dataset.collection;
+  document.querySelectorAll('#collectionFilters .pill-btn').forEach(b => {
+    b.className = 'pill-btn';
+    const c = b.dataset.collection;
+    if (c === currentCollection) {
+      if (c === 'All') b.classList.add('active-all');
+      else if (c === 'Standard') b.classList.add('active-std');
+      else b.classList.add('active-spur');
+    }
+  });
+  render();
+});
+
+document.getElementById('searchInput').addEventListener('input', e => {
+  currentSearch = e.target.value; render();
+});
+
+document.querySelectorAll('th.sortable').forEach(th => {
+  th.addEventListener('click', () => {
+    const field = th.dataset.sort;
+    if (currentSort === field) currentSortDir = currentSortDir === 'asc' ? 'desc' : 'asc';
+    else { currentSort = field; currentSortDir = 'asc'; }
+    document.querySelectorAll('.sort-icon').forEach(s => { s.className = 'sort-icon'; s.textContent = '\u2195'; });
+    const icon = th.querySelector('.sort-icon');
+    icon.className = 'sort-icon active';
+    icon.textContent = currentSortDir === 'asc' ? '\u2191' : '\u2193';
+    render();
+  });
+});
+
+document.getElementById('collapseAll').addEventListener('click', () => { expandedRows.clear(); render(); });
+
+// Auto-refresh rankings every 30 seconds
+setInterval(() => { if (currentUser) loadRankings(); }, 30000);
+
+// Initial render
+render();
+</script>
+</body>
+</html>

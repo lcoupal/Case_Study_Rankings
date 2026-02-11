@@ -61,9 +61,13 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:#1a1a
 .count-bar{font-size:13px;color:var(--light-slate);margin-bottom:8px;padding-left:4px;display:flex;align-items:center;gap:12px}
 .collapse-link{color:var(--teal);cursor:pointer;text-decoration:none}.collapse-link:hover{text-decoration:underline}
 .sync-status{margin-left:auto;font-size:12px}.sync-status.saving{color:var(--teal)}.sync-status.saved{color:#6B8E6B}.sync-status.error{color:#C25178}
-.table-wrap{background:var(--card-bg);border-radius:10px;border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,.04);overflow:hidden}
-.table-scroll{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:14px}
+
+/* ✅ UPDATED: keep table aligned to upper section width */
+.table-wrap{width:100%;max-width:100%;background:var(--card-bg);border-radius:10px;border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.table-scroll{width:100%;overflow-x:auto}
+/* ✅ UPDATED: fixed layout so it doesn’t overflow weirdly */
+table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:14px}
+
 thead tr{background:#F7F9FC;border-bottom:2px solid var(--border)}
 th{padding:11px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--slate);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;user-select:none}
 th.sortable{cursor:pointer}th.sortable:hover{color:var(--navy)}
@@ -135,6 +139,7 @@ tr.detail-row td{padding:4px 14px 18px 14px}
     </div>
   </div>
 </div>
+
 <div class="container">
   <div class="header">
     <div class="header-top">
@@ -167,11 +172,13 @@ tr.detail-row td{padding:4px 14px 18px 14px}
       </div>
     </div>
   </div>
+
   <div class="filter-bar">
     <div class="search-wrap">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="text" id="searchInput" placeholder="Search titles, scenarios, claims...">
     </div>
+
     <div class="pill-group" id="domFilt">
       <button class="pill-btn act-all" data-v="All">All Domains</button>
       <button class="pill-btn" data-v="Healthcare">Healthcare</button>
@@ -179,27 +186,25 @@ tr.detail-row td{padding:4px 14px 18px 14px}
       <button class="pill-btn" data-v="Education">Education</button>
       <button class="pill-btn" data-v="IT">IT</button>
     </div>
+
     <div class="pill-group right" id="colFilt">
       <button class="pill-btn act-all" data-v="All">Both</button>
       <button class="pill-btn" data-v="Standard">Standard</button>
       <button class="pill-btn" data-v="Spurious Correlations">Spurious</button>
     </div>
-    <!-- ✅ ADD THIS BLOCK -->
-  <div class="pill-group right" id="userActions">
-    <button class="pill-btn" id="btnRestart" title="Clears your ratings/notes in the Google Sheet">
-      Restart my ratings
-    </button>
-    <button class="pill-btn" id="btnSignout" title="Signs out on this device">
-      Sign out
-    </button>
+
+    <!-- ✅ UPDATED: Removed Restart button, kept Sign out only -->
+    <div class="pill-group right">
+      <button class="pill-btn" id="btnSignout" title="Signs out on this device">Sign out</button>
+    </div>
   </div>
-</div>
-  </div>
+
   <div class="count-bar">
     <span>Showing <strong id="fCnt">20</strong> of 20</span>
     <a class="collapse-link" id="colAll" style="display:none">← Collapse all</a>
     <span class="sync-status" id="syncSt"></span>
   </div>
+
   <div class="table-wrap"><div class="table-scroll">
     <table>
       <thead><tr>
@@ -214,6 +219,7 @@ tr.detail-row td{padding:4px 14px 18px 14px}
       <tbody id="tBody"></tbody>
     </table>
   </div></div>
+
   <div class="legend">
     <strong>Collections:</strong>
     <span><span class="bc std">Standard</span> 12 real-world</span>
@@ -471,46 +477,11 @@ document.querySelectorAll('th.sortable').forEach(th=>{
   });
 });
 document.getElementById('colAll').addEventListener('click',()=>{expanded.clear();render()});
-// =============================
-// User actions: restart + sign out
-// =============================
-document.getElementById('btnRestart')?.addEventListener('click', async () => {
-  if (!user) return;
 
-  const ok = confirm(
-    `Restart all ratings + notes for "${user}"?\n\nThis clears YOUR saved choices in the shared Google Sheet.`
-  );
-  if (!ok) return;
-
-  setSS('Restarting...','saving');
-
-  try {
-    await fetch(
-      API + '?action=resetReviewer&reviewer=' + encodeURIComponent(user),
-      { method: 'GET', mode: 'no-cors' }
-    );
-
-    // Clear local cache for this reviewer
-    Object.keys(ranks).forEach(k => {
-      if (k.endsWith('_' + user)) delete ranks[k];
-    });
-
-    expanded.clear();
-
-    // Reload from sheet so UI matches actual stored data
-    loadRanks();
-
-    setSS('Restarted ✓','saved');
-  } catch (e) {
-    setSS('Restart failed','error');
-  }
-});
+/* ✅ UPDATED: Removed restart handler entirely */
 
 document.getElementById('btnSignout')?.addEventListener('click', () => {
   localStorage.removeItem('csCur');
-  // Optional (if you want to forget old names too):
-  // localStorage.removeItem('csRev');
-
   user = null;
   expanded.clear();
   switchUser(); // shows login overlay again

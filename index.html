@@ -319,9 +319,9 @@ function loadRanks(){
   window[cbName] = function(d){
     try{
       ranks = {};
-      (d || []).forEach(x=>{
-        ranks[rk(x.caseId, x.reviewer)] = { rating: x.rating || 0, notes: x.notes || '' };
-      });
+      (d || []).filter(x => x.caseId && x.reviewer).forEach(x=>{
+  ranks[rk(x.caseId, x.reviewer)] = { rating: x.rating || 0, notes: x.notes || '' };
+});
       updReviewers();
       setSS('Synced','saved');
       render();

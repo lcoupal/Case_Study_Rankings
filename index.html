@@ -184,6 +184,16 @@ tr.detail-row td{padding:4px 14px 18px 14px}
       <button class="pill-btn" data-v="Standard">Standard</button>
       <button class="pill-btn" data-v="Spurious Correlations">Spurious</button>
     </div>
+    <!-- ✅ ADD THIS BLOCK -->
+  <div class="pill-group right" id="userActions">
+    <button class="pill-btn" id="btnRestart" title="Clears your ratings/notes in the Google Sheet">
+      Restart my ratings
+    </button>
+    <button class="pill-btn" id="btnSignout" title="Signs out on this device">
+      Sign out
+    </button>
+  </div>
+</div>
   </div>
   <div class="count-bar">
     <span>Showing <strong id="fCnt">20</strong> of 20</span>
@@ -461,6 +471,50 @@ document.querySelectorAll('th.sortable').forEach(th=>{
   });
 });
 document.getElementById('colAll').addEventListener('click',()=>{expanded.clear();render()});
+// =============================
+// User actions: restart + sign out
+// =============================
+document.getElementById('btnRestart')?.addEventListener('click', async () => {
+  if (!user) return;
+
+  const ok = confirm(
+    `Restart all ratings + notes for "${user}"?\n\nThis clears YOUR saved choices in the shared Google Sheet.`
+  );
+  if (!ok) return;
+
+  setSS('Restarting...','saving');
+
+  try {
+    await fetch(
+      API + '?action=resetReviewer&reviewer=' + encodeURIComponent(user),
+      { method: 'GET', mode: 'no-cors' }
+    );
+
+    // Clear local cache for this reviewer
+    Object.keys(ranks).forEach(k => {
+      if (k.endsWith('_' + user)) delete ranks[k];
+    });
+
+    expanded.clear();
+
+    // Reload from sheet so UI matches actual stored data
+    loadRanks();
+
+    setSS('Restarted ✓','saved');
+  } catch (e) {
+    setSS('Restart failed','error');
+  }
+});
+
+document.getElementById('btnSignout')?.addEventListener('click', () => {
+  localStorage.removeItem('csCur');
+  // Optional (if you want to forget old names too):
+  // localStorage.removeItem('csRev');
+
+  user = null;
+  expanded.clear();
+  switchUser(); // shows login overlay again
+});
 
 // Auto-refresh every 30s
 setInterval(()=>{if(user)loadRanks()},30000);

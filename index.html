@@ -353,18 +353,32 @@ function loadRanks(){
 /* ============================================================
    ✅ UPDATED: saveRank() uses mode:'no-cors' to avoid CORS on POST
    ============================================================ */
-async function saveRank(cid,rev,rat,notes){
+function saveRank(cid,rev,rat,notes){
   setSS('Saving...','saving');
-  try{
-    await fetch(API+'?action=save',{
-      method:'POST',
-      mode:'no-cors',
-      body: JSON.stringify({caseId:cid,reviewer:rev,rating:rat,notes:notes})
-    });
+  const cbName='save_cb_'+Date.now();
+  const params=new URLSearchParams({
+    action:'save',
+    caseId:cid,
+    reviewer:rev,
+    rating:rat,
+    notes:notes||'',
+    callback:cbName
+  });
+  window[cbName]=function(){
     setSS('Saved ✓','saved');
-  }catch(e){
+    delete window[cbName];
+    const s=document.getElementById(cbName);
+    if(s)s.remove();
+  };
+  const s=document.createElement('script');
+  s.id=cbName;
+  s.src=API+'?'+params.toString();
+  s.onerror=()=>{
     setSS('Save failed','error');
-  }
+    delete window[cbName];
+    s.remove();
+  };
+  document.body.appendChild(s);
 }
 
 function setRat(cid,rat,ev){

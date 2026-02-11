@@ -61,13 +61,9 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:#1a1a
 .count-bar{font-size:13px;color:var(--light-slate);margin-bottom:8px;padding-left:4px;display:flex;align-items:center;gap:12px}
 .collapse-link{color:var(--teal);cursor:pointer;text-decoration:none}.collapse-link:hover{text-decoration:underline}
 .sync-status{margin-left:auto;font-size:12px}.sync-status.saving{color:var(--teal)}.sync-status.saved{color:#6B8E6B}.sync-status.error{color:#C25178}
-
-/* ✅ UPDATED: keep table aligned to upper section width */
 .table-wrap{width:100%;max-width:100%;background:var(--card-bg);border-radius:10px;border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .table-scroll{width:100%;overflow-x:auto}
-/* ✅ UPDATED: fixed layout so it doesn’t overflow weirdly */
 table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:14px}
-
 thead tr{background:#F7F9FC;border-bottom:2px solid var(--border)}
 th{padding:11px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--slate);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;user-select:none}
 th.sortable{cursor:pointer}th.sortable:hover{color:var(--navy)}
@@ -193,7 +189,6 @@ tr.detail-row td{padding:4px 14px 18px 14px}
       <button class="pill-btn" data-v="Spurious Correlations">Spurious</button>
     </div>
 
-    <!-- ✅ UPDATED: Removed Restart button, kept Sign out only -->
     <div class="pill-group right">
       <button class="pill-btn" id="btnSignout" title="Signs out on this device">Sign out</button>
     </div>
@@ -263,7 +258,7 @@ function esc(s){return s.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,
 
 function updReviewers(){
   const s=new Set();
-  Object.keys(ranks).forEach(k=>{const p=k.indexOf('_');if(p>-1)s.add(k.slice(p+1))});
+  Object.keys(ranks).forEach(k=>{const p=k.indexOf('_');if(p>-1){const name=k.slice(p+1);if(name)s.add(name)}});
   if(user)s.add(user);
   reviewers=[...s].sort((a,b)=>a===user?-1:b===user?1:a.localeCompare(b));
 }
@@ -305,11 +300,11 @@ function setSS(t,c){
   const e=document.getElementById('syncSt');
   e.textContent=t;
   e.className='sync-status '+c;
-  if(c==='saved')setTimeout(()=>{e.textContent=''},3000)
+  if(c==='saved')setTimeout(()=>{e.textContent=''},3000);
 }
 
 /* ============================================================
-   ✅ UPDATED: loadRanks() uses JSONP to avoid CORS on GitHub Pages
+   loadRanks — JSONP to avoid CORS on GitHub Pages
    ============================================================ */
 function loadRanks(){
   setSS('Loading...','saving');
@@ -319,9 +314,9 @@ function loadRanks(){
   window[cbName] = function(d){
     try{
       ranks = {};
-      (d || []).filter(x => x.caseId && x.reviewer).forEach(x=>{
-  ranks[rk(x.caseId, x.reviewer)] = { rating: x.rating || 0, notes: x.notes || '' };
-});
+      (d || []).filter(function(x){ return x.caseId && x.reviewer; }).forEach(function(x){
+        ranks[rk(x.caseId, x.reviewer)] = { rating: x.rating || 0, notes: x.notes || '' };
+      });
       updReviewers();
       setSS('Synced','saved');
       render();
@@ -331,15 +326,15 @@ function loadRanks(){
       render();
     }finally{
       delete window[cbName];
-      const s = document.getElementById(cbName);
-      if (s) s.remove();
+      var el = document.getElementById(cbName);
+      if (el) el.remove();
     }
   };
 
-  const s = document.createElement('script');
+  var s = document.createElement('script');
   s.id = cbName;
   s.src = API + '?action=load&callback=' + cbName;
-  s.onerror = () => {
+  s.onerror = function(){
     setSS('Could not load — offline','error');
     delete window[cbName];
     s.remove();
@@ -351,29 +346,31 @@ function loadRanks(){
 }
 
 /* ============================================================
-   ✅ UPDATED: saveRank() uses mode:'no-cors' to avoid CORS on POST
+   saveRank — JSONP via GET to avoid CORS on GitHub Pages
    ============================================================ */
-function saveRank(cid,rev,rat,notes){
+function saveRank(cid, rev, rat, notes){
   setSS('Saving...','saving');
-  const cbName='save_cb_'+Date.now();
-  const params=new URLSearchParams({
-    action:'save',
-    caseId:cid,
-    reviewer:rev,
-    rating:rat,
-    notes:notes||'',
-    callback:cbName
+  var cbName = 'save_cb_' + Date.now();
+  var params = new URLSearchParams({
+    action: 'save',
+    caseId: cid,
+    reviewer: rev,
+    rating: rat,
+    notes: notes || '',
+    callback: cbName
   });
-  window[cbName]=function(){
-    setSS('Saved ✓','saved');
+
+  window[cbName] = function(){
+    setSS('Saved \u2713','saved');
     delete window[cbName];
-    const s=document.getElementById(cbName);
-    if(s)s.remove();
+    var el = document.getElementById(cbName);
+    if (el) el.remove();
   };
-  const s=document.createElement('script');
-  s.id=cbName;
-  s.src=API+'?'+params.toString();
-  s.onerror=()=>{
+
+  var s = document.createElement('script');
+  s.id = cbName;
+  s.src = API + '?' + params.toString();
+  s.onerror = function(){
     setSS('Save failed','error');
     delete window[cbName];
     s.remove();
@@ -383,76 +380,76 @@ function saveRank(cid,rev,rat,notes){
 
 function setRat(cid,rat,ev){
   if(ev)ev.stopPropagation();if(!user)return;
-  const k=rk(cid,user),ex=ranks[k]||{};
-  const nr=ex.rating===rat?0:rat;
-  ranks[k]={...ex,rating:nr};updReviewers();render();
+  var k=rk(cid,user),ex=ranks[k]||{};
+  var nr=ex.rating===rat?0:rat;
+  ranks[k]={rating:nr,notes:ex.notes||''};updReviewers();render();
   saveRank(cid,user,nr,ex.notes||'');
 }
 
 function saveNotes(cid){
   if(!user)return;
-  const ta=document.getElementById('n_'+cid+'_'+user);if(!ta)return;
-  const k=rk(cid,user),ex=ranks[k]||{};
-  ranks[k]={...ex,notes:ta.value};
+  var ta=document.getElementById('n_'+cid+'_'+user);if(!ta)return;
+  var k=rk(cid,user),ex=ranks[k]||{};
+  ranks[k]={rating:ex.rating||0,notes:ta.value};
   clearTimeout(saveT);
-  saveT=setTimeout(()=>saveRank(cid,user,ex.rating||0,ta.value),800);
+  saveT=setTimeout(function(){ saveRank(cid,user,ex.rating||0,ta.value); },800);
 }
 
 function getF(){
-  let d=[...CASES];
-  if(fDom!=='All')d=d.filter(c=>c.d===fDom);
-  if(fCol!=='All')d=d.filter(c=>c.co===fCol);
-  if(fSearch){const q=fSearch.toLowerCase();d=d.filter(c=>c.t.toLowerCase().includes(q)||c.s.toLowerCase().includes(q)||c.c1.toLowerCase().includes(q)||c.c2.toLowerCase().includes(q))}
-  if(sortF){d.sort((a,b)=>{const av=a[sortF]||'',bv=b[sortF]||'';return sortD==='asc'?av.localeCompare(bv):bv.localeCompare(av)})}
+  var d=[].concat(CASES);
+  if(fDom!=='All')d=d.filter(function(c){return c.d===fDom});
+  if(fCol!=='All')d=d.filter(function(c){return c.co===fCol});
+  if(fSearch){var q=fSearch.toLowerCase();d=d.filter(function(c){return c.t.toLowerCase().includes(q)||c.s.toLowerCase().includes(q)||c.c1.toLowerCase().includes(q)||c.c2.toLowerCase().includes(q)})}
+  if(sortF){d.sort(function(a,b){var av=a[sortF]||'',bv=b[sortF]||'';return sortD==='asc'?av.localeCompare(bv):bv.localeCompare(av)})}
   return d;
 }
 
 function stars(cid,rev){
-  const k=rk(cid,rev),rat=(ranks[k]||{}).rating||0,me=rev===user;
-  let h='';
-  for(let i=1;i<=5;i++){
-    if(me)h+=`<span class="star ${i<=rat?'filled':''}" onmouseover="hSt(this,${i})" onmouseout="uSt(this)" onclick="setRat('${cid}',${i},event)">\u2605</span>`;
-    else h+=`<span class="star ${i<=rat?'of':''} dis">\u2605</span>`;
+  var k=rk(cid,rev),rat=(ranks[k]||{}).rating||0,me=rev===user;
+  var h='';
+  for(var i=1;i<=5;i++){
+    if(me)h+='<span class="star '+(i<=rat?'filled':'')+'" onmouseover="hSt(this,'+i+')" onmouseout="uSt(this)" onclick="setRat(\''+cid+'\','+i+',event)">\u2605</span>';
+    else h+='<span class="star '+(i<=rat?'of':'')+' dis">\u2605</span>';
   }
   return h;
 }
 
 function render(){
-  const fl=getF(),tb=document.getElementById('tBody');
+  var fl=getF(),tb=document.getElementById('tBody');
   document.getElementById('fCnt').textContent=fl.length;
   document.getElementById('colAll').style.display=expanded.size?'inline':'none';
-  let h='';
+  var h='';
   if(!fl.length){h='<tr><td colspan="7" class="empty-state">No case studies match your filters.</td></tr>'}
-  else fl.forEach(c=>{
-    const ex=expanded.has(c.id),dc=DC[c.d],cc=c.co==='Standard'?'std':'spur',cl=c.co==='Standard'?'Standard':'Spurious';
-    h+=`<tr class="${ex?'expanded':''}" onclick="tog('${c.id}')">
-      <td class="cell-id">${c.id}</td>
-      <td><span class="bc ${cc}">${cl}</span></td>
-      <td class="cell-title">${c.t}</td>
-      <td><span class="bd ${dc}"><span class="dot"></span>${c.d}</span></td>
-      <td class="cell-scenario">${c.s}</td>
-      <td class="rc" onclick="event.stopPropagation()"><div class="rr">`;
+  else fl.forEach(function(c){
+    var ex=expanded.has(c.id),dc=DC[c.d],cc=c.co==='Standard'?'std':'spur',cl=c.co==='Standard'?'Standard':'Spurious';
+    h+='<tr class="'+(ex?'expanded':'')+'" onclick="tog(\''+c.id+'\')">';
+    h+='<td class="cell-id">'+c.id+'</td>';
+    h+='<td><span class="bc '+cc+'">'+cl+'</span></td>';
+    h+='<td class="cell-title">'+c.t+'</td>';
+    h+='<td><span class="bd '+dc+'"><span class="dot"></span>'+c.d+'</span></td>';
+    h+='<td class="cell-scenario">'+c.s+'</td>';
+    h+='<td class="rc" onclick="event.stopPropagation()"><div class="rr">';
     if(!reviewers.length)h+='<span class="nr">No ratings yet</span>';
-    else reviewers.forEach(r=>{
-      h+=`<div class="rw"><span class="ra" style="background:${gc(r)}">${r[0].toUpperCase()}</span><span class="rn" title="${esc(r)}">${esc(r)}</span><div class="stars">${stars(c.id,r)}</div></div>`;
+    else reviewers.forEach(function(r){
+      h+='<div class="rw"><span class="ra" style="background:'+gc(r)+'">'+r[0].toUpperCase()+'</span><span class="rn" title="'+esc(r)+'">'+esc(r)+'</span><div class="stars">'+stars(c.id,r)+'</div></div>';
     });
-    h+=`</div></td><td style="text-align:center"><span class="chev ${ex?'open':''}">\u25BE</span></td></tr>`;
+    h+='</div></td><td style="text-align:center"><span class="chev '+(ex?'open':'')+'">&#9662;</span></td></tr>';
     if(ex){
-      const l1=c.co==='Spurious Correlations'?'The Correct Claim:':'The Claim:';
-      const l2=c.co==='Spurious Correlations'?'The Flawed Claim:':'Claim to Evaluate:';
-      h+=`<tr class="detail-row" onclick="event.stopPropagation()"><td colspan="7">
-        <div class="dg">
-          <div class="dc"><div class="dch"><span class="cb c1">C1</span> Support a Claim</div><div class="dl">${l1}</div><div class="dcl">\u201C${c.c1}\u201D</div></div>
-          <div class="dc"><div class="dch"><span class="cb c2">C2</span> Evaluate a Claim</div><div class="dl">${l2}</div><div class="dcl">\u201C${c.c2}\u201D</div></div>
-          <div class="dc"><div class="dch"><span class="cb c3">C3</span> Explain the System</div><div class="dl">System Components:</div><div class="ds">${c.c3}</div></div>
-        </div>
-        <div class="ns"><h4>Reviewer Notes</h4><div class="ng">`;
-      reviewers.forEach(r=>{
-        const k=rk(c.id,r),notes=(ranks[k]||{}).notes||'',me=r===user;
-        h+=`<div class="nc"><div class="nch"><span class="ra" style="background:${gc(r)}">${r[0].toUpperCase()}</span><span>${esc(r)}</span></div>`;
-        if(me)h+=`<textarea id="n_${c.id}_${r}" placeholder="Add your notes..." oninput="saveNotes('${c.id}')">${esc(notes)}</textarea>`;
-        else if(notes)h+=`<div class="on">${esc(notes)}</div>`;
-        else h+=`<div class="en">No notes yet</div>`;
+      var l1=c.co==='Spurious Correlations'?'The Correct Claim:':'The Claim:';
+      var l2=c.co==='Spurious Correlations'?'The Flawed Claim:':'Claim to Evaluate:';
+      h+='<tr class="detail-row" onclick="event.stopPropagation()"><td colspan="7">';
+      h+='<div class="dg">';
+      h+='<div class="dc"><div class="dch"><span class="cb c1">C1</span> Support a Claim</div><div class="dl">'+l1+'</div><div class="dcl">\u201C'+c.c1+'\u201D</div></div>';
+      h+='<div class="dc"><div class="dch"><span class="cb c2">C2</span> Evaluate a Claim</div><div class="dl">'+l2+'</div><div class="dcl">\u201C'+c.c2+'\u201D</div></div>';
+      h+='<div class="dc"><div class="dch"><span class="cb c3">C3</span> Explain the System</div><div class="dl">System Components:</div><div class="ds">'+c.c3+'</div></div>';
+      h+='</div>';
+      h+='<div class="ns"><h4>Reviewer Notes</h4><div class="ng">';
+      reviewers.forEach(function(r){
+        var k=rk(c.id,r),notes=(ranks[k]||{}).notes||'',me=r===user;
+        h+='<div class="nc"><div class="nch"><span class="ra" style="background:'+gc(r)+'">'+r[0].toUpperCase()+'</span><span>'+esc(r)+'</span></div>';
+        if(me)h+='<textarea id="n_'+c.id+'_'+r+'" placeholder="Add your notes..." oninput="saveNotes(\''+c.id+'\')">'+esc(notes)+'</textarea>';
+        else if(notes)h+='<div class="on">'+esc(notes)+'</div>';
+        else h+='<div class="en">No notes yet</div>';
         h+='</div>';
       });
       h+='</div></div></td></tr>';
@@ -462,50 +459,48 @@ function render(){
 }
 
 function tog(id){if(expanded.has(id))expanded.delete(id);else expanded.add(id);render()}
-function hSt(el,n){el.parentElement.querySelectorAll('.star').forEach((s,i)=>{if(i<n)s.classList.add('hov')})}
-function uSt(el){el.parentElement.querySelectorAll('.star').forEach(s=>s.classList.remove('hov'))}
+function hSt(el,n){el.parentElement.querySelectorAll('.star').forEach(function(s,i){if(i<n)s.classList.add('hov')})}
+function uSt(el){el.parentElement.querySelectorAll('.star').forEach(function(s){s.classList.remove('hov')})}
 
-const DA={All:'act-all',Healthcare:'act-health',Business:'act-biz',Education:'act-edu',IT:'act-it'};
-const CA={All:'act-all',Standard:'act-std','Spurious Correlations':'act-spur'};
+var DA={All:'act-all',Healthcare:'act-health',Business:'act-biz',Education:'act-edu',IT:'act-it'};
+var CA={All:'act-all',Standard:'act-std','Spurious Correlations':'act-spur'};
 
-document.getElementById('domFilt').addEventListener('click',e=>{
-  const b=e.target.closest('.pill-btn');if(!b)return;
+document.getElementById('domFilt').addEventListener('click',function(e){
+  var b=e.target.closest('.pill-btn');if(!b)return;
   fDom=b.dataset.v;
-  document.querySelectorAll('#domFilt .pill-btn').forEach(x=>{x.className='pill-btn';if(x.dataset.v===fDom)x.classList.add(DA[fDom])});
+  document.querySelectorAll('#domFilt .pill-btn').forEach(function(x){x.className='pill-btn';if(x.dataset.v===fDom)x.classList.add(DA[fDom])});
   render();
 });
-document.getElementById('colFilt').addEventListener('click',e=>{
-  const b=e.target.closest('.pill-btn');if(!b)return;
+document.getElementById('colFilt').addEventListener('click',function(e){
+  var b=e.target.closest('.pill-btn');if(!b)return;
   fCol=b.dataset.v;
-  document.querySelectorAll('#colFilt .pill-btn').forEach(x=>{x.className='pill-btn';if(x.dataset.v===fCol)x.classList.add(CA[fCol])});
+  document.querySelectorAll('#colFilt .pill-btn').forEach(function(x){x.className='pill-btn';if(x.dataset.v===fCol)x.classList.add(CA[fCol])});
   render();
 });
-document.getElementById('searchInput').addEventListener('input',e=>{fSearch=e.target.value;render()});
-document.querySelectorAll('th.sortable').forEach(th=>{
-  th.addEventListener('click',()=>{
-    const f=th.dataset.sort;
+document.getElementById('searchInput').addEventListener('input',function(e){fSearch=e.target.value;render()});
+document.querySelectorAll('th.sortable').forEach(function(th){
+  th.addEventListener('click',function(){
+    var f=th.dataset.sort;
     if(sortF===f)sortD=sortD==='asc'?'desc':'asc';else{sortF=f;sortD='asc'}
-    document.querySelectorAll('.si').forEach(s=>{s.className='si';s.textContent='\u2195'});
-    const ic=th.querySelector('.si');ic.className='si on';ic.textContent=sortD==='asc'?'\u2191':'\u2193';
+    document.querySelectorAll('.si').forEach(function(s){s.className='si';s.textContent='\u2195'});
+    var ic=th.querySelector('.si');ic.className='si on';ic.textContent=sortD==='asc'?'\u2191':'\u2193';
     render();
   });
 });
-document.getElementById('colAll').addEventListener('click',()=>{expanded.clear();render()});
+document.getElementById('colAll').addEventListener('click',function(){expanded.clear();render()});
 
-/* ✅ UPDATED: Removed restart handler entirely */
-
-document.getElementById('btnSignout')?.addEventListener('click', () => {
+document.getElementById('btnSignout').addEventListener('click', function(){
   localStorage.removeItem('csCur');
   user = null;
   expanded.clear();
-  switchUser(); // shows login overlay again
+  switchUser();
 });
 
 // Auto-refresh every 30s
-setInterval(()=>{if(user)loadRanks()},30000);
+setInterval(function(){if(user)loadRanks()},30000);
 
 // Auto-login if returning
-const prev=localStorage.getItem('csCur');
+var prev=localStorage.getItem('csCur');
 if(prev){login(prev)}else{showRet();render()}
 </script>
 </body>
